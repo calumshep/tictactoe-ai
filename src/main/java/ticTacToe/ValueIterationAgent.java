@@ -69,7 +69,7 @@ public class ValueIterationAgent extends Agent
 	public ValueIterationAgent(double discountFactor, double winReward, double loseReward, double livingReward, double drawReward)
 	{
 		this.discount = discountFactor;
-		mdp=new TTTMDP(winReward, loseReward, livingReward, drawReward);
+		mdp = new TTTMDP(winReward, loseReward, livingReward, drawReward);
 	}
 	
 	/**
@@ -94,8 +94,9 @@ public class ValueIterationAgent extends Agent
 	 */
 	public void iterate()
 	{
-		/* YOUR CODE HERE
-		 */
+		for (int i = 0; i < this.k; i++) {
+			mdp.generateTransitions(g, this.getMove(g));
+		}
 	}
 	
 	/**
