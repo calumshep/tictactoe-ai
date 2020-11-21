@@ -14,28 +14,27 @@ import java.util.Map;
  * @author ae187
  *
  */
-public class ValueIterationAgent extends Agent {
-
+public class ValueIterationAgent extends Agent
+{
 	/**
 	 * This map is used to store the values of states
 	 */
-	Map<Game, Double> valueFunction=new HashMap<Game, Double>();
+	Map<Game, Double> valueFunction = new HashMap<Game, Double>();
 	
 	/**
-	 * the discount factor
+	 * The discount factor
 	 */
-	double discount=0.9;
+	double discount = 0.9;
 	
 	/**
-	 * the MDP model
+	 * The MDP model
 	 */
-	TTTMDP mdp=new TTTMDP();
+	TTTMDP mdp = new TTTMDP();
 	
 	/**
-	 * the number of iterations to perform - feel free to change this/try out different numbers of iterations
+	 * The number of iterations to perform - feel free to change this/try out different numbers of iterations
 	 */
-	int k=10;
-	
+	int k = 10;
 	
 	/**
 	 * This constructor trains the agent offline first and sets its policy
@@ -43,28 +42,34 @@ public class ValueIterationAgent extends Agent {
 	public ValueIterationAgent()
 	{
 		super();
-		mdp=new TTTMDP();
-		this.discount=0.9;
+		mdp = new TTTMDP();
+		this.discount = 0.9;
 		initValues();
 		train();
 	}
-	
 	
 	/**
 	 * Use this constructor to initialise your agent with an existing policy
 	 * @param p
 	 */
-	public ValueIterationAgent(Policy p) {
+	public ValueIterationAgent(Policy p)
+	{
 		super(p);
 		
 	}
 
-	public ValueIterationAgent(double discountFactor) {
-		
-		this.discount=discountFactor;
-		mdp=new TTTMDP();
+	public ValueIterationAgent(double discountFactor)
+	{
+		this.discount = discountFactor;
+		mdp = new TTTMDP();
 		initValues();
 		train();
+	}
+
+	public ValueIterationAgent(double discountFactor, double winReward, double loseReward, double livingReward, double drawReward)
+	{
+		this.discount = discountFactor;
+		mdp=new TTTMDP(winReward, loseReward, livingReward, drawReward);
 	}
 	
 	/**
@@ -74,27 +79,14 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public void initValues()
 	{
+		List<Game> allGames = Game.generateAllValidGames('X');//all valid games where it is X's turn, or it's terminal.
 		
-		List<Game> allGames=Game.generateAllValidGames('X');//all valid games where it is X's turn, or it's terminal.
-		for(Game g: allGames)
+		for(Game g: allGames) {
 			this.valueFunction.put(g, 0.0);
-		
-		
-		
-	}
-	
-	
-	
-	public ValueIterationAgent(double discountFactor, double winReward, double loseReward, double livingReward, double drawReward)
-	{
-		this.discount=discountFactor;
-		mdp=new TTTMDP(winReward, loseReward, livingReward, drawReward);
+		}
 	}
 	
 	/**
-	 
-	
-	/*
 	 * Performs {@link #k} value iteration steps. After running this method, the {@link ValueIterationAgent#valueFunction} map should contain
 	 * the (current) values of each reachable state. You should use the {@link TTTMDP} provided to do this.
 	 * 
@@ -106,7 +98,8 @@ public class ValueIterationAgent extends Agent {
 		 */
 	}
 	
-	/**This method should be run AFTER the train method to extract a policy according to {@link ValueIterationAgent#valueFunction}
+	/**
+	 * This method should be run AFTER the train method to extract a policy according to {@link ValueIterationAgent#valueFunction}
 	 * You will need to do a single step of expectimax from each game (state) key in {@link ValueIterationAgent#valueFunction} 
 	 * to extract a policy.
 	 * 
@@ -126,40 +119,28 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public void train()
 	{
-		/**
-		 * First run value iteration
-		 */
+		// First run value iteration
 		this.iterate();
+
 		/**
-		 * now extract policy from the values in {@link ValueIterationAgent#valueFunction} and set the agent's policy 
-		 *  
+		 * Now extract policy from the values in {@link ValueIterationAgent#valueFunction} and set the agent's policy 
 		 */
-		
 		super.policy=extractPolicy();
 		
-		if (this.policy==null)
+		if (this.policy == null)
 		{
 			System.out.println("Unimplemented methods! First implement the iterate() & extractPolicy() methods");
 			//System.exit(1);
-		}
-		
-		
-		
+		}		
 	}
 
 	public static void main(String a[]) throws IllegalMoveException
 	{
-		//Test method to play the agent against a human agent.
-		ValueIterationAgent agent=new ValueIterationAgent();
-		HumanAgent d=new HumanAgent();
+		// Test method to play the agent against a human agent.
+		ValueIterationAgent agent = new ValueIterationAgent();
+		HumanAgent d = new HumanAgent();
 		
-		Game g=new Game(agent, d, d);
+		Game g = new Game(agent, d, d);
 		g.playOut();
-		
-		
-		
-
-		
-		
 	}
 }
