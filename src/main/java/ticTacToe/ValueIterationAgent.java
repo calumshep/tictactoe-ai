@@ -89,13 +89,11 @@ public class ValueIterationAgent extends Agent
 	/**
 	 * Performs {@link #k} value iteration steps. After running this method, the {@link ValueIterationAgent#valueFunction} map should contain
 	 * the (current) values of each reachable state. You should use the {@link TTTMDP} provided to do this.
-	 * 
-	 *
 	 */
 	public void iterate()
 	{
 		for (int i = 0; i < this.k; i++) {
-			mdp.generateTransitions(g, this.getMove(g));
+			mdp.generateTransitions(valueFunction., this.getMove(g));
 		}
 	}
 	
