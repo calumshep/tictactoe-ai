@@ -1,6 +1,5 @@
 package ticTacToe;
 
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,8 +91,42 @@ public class ValueIterationAgent extends Agent
 	 */
 	public void iterate()
 	{
+		// Perform k number of iterations
 		for (int i = 0; i < this.k; i++) {
-			mdp.generateTransitions(valueFunction., this.getMove(g));
+			// Start at the first state in the valueFunction map
+			for (Game currentGame : this.valueFunction.keySet()) {
+				// Get all the possible actions from the current state (Game)
+				List<Move> currentMoves = currentGame.getPossibleMoves();
+
+				// Compute value of current state (Game)
+				double stateValue;
+				if (currentGame.isTerminal()) {
+					stateValue = 0.0;
+				} else {
+					stateValue = -Double.MAX_VALUE;
+				}
+				
+				for (Move move : currentMoves) {
+					// Get all the possible outcomes from the current action (Move)
+					List<TransitionProb> T = mdp.generateTransitions(currentGame, move);
+
+					// Compute the Bellman equation for this action
+					double sum = 0.0;
+					for (TransitionProb t : T) {
+						sum += (t.prob * (
+							t.outcome.localReward + this.discount * this.valueFunction.get(t.outcome.sPrime))
+						);
+					}
+
+					// Check if sum (sPrime value) is max thus far (i.e. so far it is the state value)
+					if (sum > stateValue) {
+						stateValue = sum;
+					}
+				}
+
+				// Store the value of the current state (Game)
+				this.valueFunction.replace(currentGame, stateValue);
+			}
 		}
 	}
 	
@@ -106,10 +139,36 @@ public class ValueIterationAgent extends Agent
 	 */
 	public Policy extractPolicy()
 	{
-		/*
-		 * YOUR CODE HERE
-		 */
-		return null;
+		Policy policy = new Policy();
+		
+		// Start at the first state in the valueFunction map
+		for (Game currentGame : this.valueFunction.keySet()) {
+			// Get all the possible actions from the current state (Game)
+			List<Move> currentMoves = currentGame.getPossibleMoves();
+
+			// Compute value of current state (Game)
+			double stateValue = -Double.MAX_VALUE;
+			for (Move move : currentMoves) {
+				// Get all the possible outcomes from the current action (Move)
+				List<TransitionProb> T = mdp.generateTransitions(currentGame, move);
+
+				// Compute the Bellman equation for this action
+				double sum = 0.0;
+				for (TransitionProb t : T) {
+					sum += (t.prob * (
+						t.outcome.localReward + this.discount * this.valueFunction.get(t.outcome.sPrime))
+					);
+				}
+
+				// Check if sum (sPrime value) is max thus far (i.e. so far it is the state value)
+				if (sum >= stateValue) {
+					stateValue = sum;
+					policy.policy.put(currentGame, move);
+				}
+			}
+		}
+		
+		return policy;
 	}
 	
 	/**
@@ -124,7 +183,7 @@ public class ValueIterationAgent extends Agent
 		/**
 		 * Now extract policy from the values in {@link ValueIterationAgent#valueFunction} and set the agent's policy 
 		 */
-		super.policy=extractPolicy();
+		super.policy = this.extractPolicy();
 		
 		if (this.policy == null)
 		{
