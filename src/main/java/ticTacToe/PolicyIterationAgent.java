@@ -1,9 +1,8 @@
 package ticTacToe;
 
-
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -106,8 +105,10 @@ public class PolicyIterationAgent extends Agent
 	 */
 	public void initValues()
 	{
-		List<Game> allGames=Game.generateAllValidGames('X');//all valid games where it is X's turn, or it's terminal.
-		for(Game g: allGames) {
+		// All valid games where it is X's turn, or it's terminal
+		List<Game> allGames=Game.generateAllValidGames('X');
+		
+		for (Game g: allGames) {
 			this.policyValues.put(g, 0.0);
 		}
 	}
@@ -119,9 +120,14 @@ public class PolicyIterationAgent extends Agent
 	 */
 	public void initRandomPolicy()
 	{
-		/*
-		 * YOUR CODE HERE
-		 */
+		for (Game currentState : this.policyValues.keySet()) {
+			if (currentState.getPossibleMoves().size() > 0) {
+				this.curPolicy.put(
+					currentState,
+					currentState.getPossibleMoves().get(new Random().nextInt(currentState.getPossibleMoves().size()))
+				);
+			}
+		}
 	}
 
 	/**
@@ -130,13 +136,62 @@ public class PolicyIterationAgent extends Agent
 	 * the {@link PolicyIterationAgent#policyValues} map should contain the values of each reachable state under the current policy. 
 	 * You should use the {@link TTTMDP} {@link PolicyIterationAgent#mdp} provided to do this.
 	 *
-	 * @param delta
+	 * @param delta The minimum change in state values at which they can be considered 'converged'
 	 */
 	protected void evaluatePolicy(double delta)
 	{
-		/*
-		 * YOUR CODE HERE
-		 */
+		// Delta for each iteration is initialised to arbitrary value
+		double iterationDelta = 0.0;
+
+		do {
+			// Start at the first state in the policyValues map
+			for (Map.Entry<Game, Double> currentGame : this.policyValues.entrySet()) {
+				// Get all the possible actions from the current state (Game)
+				List<Move> currentMoves = currentGame.getKey().getPossibleMoves();
+
+				double newStateValue;
+				
+				if (currentGame.getKey().isTerminal()) {
+					// Terminal state value is always zero so change is zero
+					continue;
+				} else {
+					/*
+					 * MAX_VALUE is largest *magnitude*, so using negative for numerically smallest
+					 * Ensures that first comparison for max will work even if new max is negative
+					 */
+					newStateValue = -Double.MAX_VALUE;
+				}
+				
+				// Compute value of current state (Game)
+				for (Move move : currentMoves) {
+					// Get all the possible outcomes from the current action (Move)
+					List<TransitionProb> T = mdp.generateTransitions(currentGame.getKey(), move);
+
+					// Compute the Bellman equation for this action
+					double sum = 0.0;
+					for (TransitionProb t : T) {
+						sum += (t.prob * (
+							t.outcome.localReward + this.discount * this.policyValues.get(t.outcome.sPrime))
+						);
+					}
+
+					/*
+					 * Check if sum (sPrime value) is max of iterations thus far
+					 * (i.e. it is the overall state value)
+					 */
+					if (sum > newStateValue) {
+						newStateValue = sum;
+					}
+				}
+
+				// Calculate difference in old and new utility
+				iterationDelta = Math.abs(this.policyValues.get(currentGame.getKey()) - newStateValue);
+
+				// Store the new utility of the current state (Game)
+				this.policyValues.replace(currentGame.getKey(), newStateValue);
+			}
+		// Can stop iterating once difference is <= provided min difference (delta)
+		} while (iterationDelta > delta);
 	}
 
 	/**
@@ -149,9 +204,59 @@ public class PolicyIterationAgent extends Agent
 	 */
 	protected boolean improvePolicy()
 	{
-		/* YOUR CODE HERE */
+		/*
+		 * Only one action needs to be updated for the policy to have been improved
+		 */
+		boolean improved = false;
 		
-		return false;
+		// Start at the first state in the valueFunction map
+		for (Game currentGame : this.policyValues.keySet()) {
+			// Get all the possible actions from the current state (Game)
+			List<Move> currentMoves = currentGame.getPossibleMoves();
+			
+			double stateValue;
+			
+			if (currentGame.isTerminal()) {
+				// Terminal state value is always zero
+				continue;
+			} else {
+				/*
+				 * MAX_VALUE is largest *magnitude*, so using negative for numerically smallest
+				 * Ensures that first comparison for max will work even if new max is negative
+				 */
+				stateValue = -Double.MAX_VALUE;
+			}
+			
+			Move newAction = null;
+			for (Move move : currentMoves) {
+				// Get all the possible outcomes from the current action (Move)
+				List<TransitionProb> T = mdp.generateTransitions(currentGame, move);
+
+				// Compute the Bellman equation for this action
+				double sum = 0.0;
+				for (TransitionProb t : T) {
+					sum += (t.prob * (
+						t.outcome.localReward + this.discount * this.policyValues.get(t.outcome.sPrime))
+					);
+				}
+
+				// Check if sum (sPrime value) is max thus far (i.e. so far it is the state value)
+				if (sum >= stateValue) {
+					stateValue = sum;
+					newAction = move;
+				}
+			}
+			
+			// Check if the new 'best' action is different (i.e. it's been updated)
+			if (newAction != null && !newAction.equals(this.curPolicy.get(currentGame))) {
+				// Store the new action instead of the old one
+				this.curPolicy.replace(currentGame, newAction);
+				// Policy has been improved
+				improved = true;
+			}
+		}
+		
+		return improved;
 	}
 	
 	/**
@@ -161,7 +266,13 @@ public class PolicyIterationAgent extends Agent
 	 */
 	public void train()
 	{
-		/* YOUR CODE HERE */
+		// Repeat an evaluate/improve chain until the policy is no longer changed
+		do {
+			this.evaluatePolicy(this.delta);		
+		} while (this.improvePolicy() == true);
+		
+		// Once the policy has been finalised (converged), update the Agent - play can begin
+		super.policy = new Policy(this.curPolicy);
 	}
 	
 	public static void main(String[] args) throws IllegalMoveException
