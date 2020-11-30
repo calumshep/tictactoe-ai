@@ -98,14 +98,21 @@ public class ValueIterationAgent extends Agent
 				// Get all the possible actions from the current state (Game)
 				List<Move> currentMoves = currentGame.getPossibleMoves();
 
-				// Compute value of current state (Game)
 				double stateValue;
+				
 				if (currentGame.isTerminal()) {
+					// Terminal state value is always zero
 					stateValue = 0.0;
+					continue;
 				} else {
+					/*
+					 * MAX_VALUE is largest *magnitude*, so using negative for numerically smallest
+					 * Ensures that first comparison for max will work even if new max is negative
+					 */
 					stateValue = -Double.MAX_VALUE;
 				}
 				
+				// Compute value of current state (Game)
 				for (Move move : currentMoves) {
 					// Get all the possible outcomes from the current action (Move)
 					List<TransitionProb> T = mdp.generateTransitions(currentGame, move);
@@ -118,7 +125,10 @@ public class ValueIterationAgent extends Agent
 						);
 					}
 
-					// Check if sum (sPrime value) is max thus far (i.e. so far it is the state value)
+					/*
+					 * Check if sum (sPrime value) is max of iterations thus far
+					 * (i.e. it is the overall state value)
+					 */
 					if (sum > stateValue) {
 						stateValue = sum;
 					}
@@ -145,9 +155,21 @@ public class ValueIterationAgent extends Agent
 		for (Game currentGame : this.valueFunction.keySet()) {
 			// Get all the possible actions from the current state (Game)
 			List<Move> currentMoves = currentGame.getPossibleMoves();
-
-			// Compute value of current state (Game)
-			double stateValue = -Double.MAX_VALUE;
+			
+			double stateValue;
+			
+			if (currentGame.isTerminal()) {
+				// Terminal state value is always zero
+				stateValue = 0.0;
+				continue;
+			} else {
+				/*
+				 * MAX_VALUE is largest *magnitude*, so using negative for numerically smallest
+				 * Ensures that first comparison for max will work even if new max is negative
+				 */
+				stateValue = -Double.MAX_VALUE;
+			}
+			
 			for (Move move : currentMoves) {
 				// Get all the possible outcomes from the current action (Move)
 				List<TransitionProb> T = mdp.generateTransitions(currentGame, move);
