@@ -160,7 +160,6 @@ public class ValueIterationAgent extends Agent
 			
 			if (currentGame.isTerminal()) {
 				// Terminal state value is always zero
-				stateValue = 0.0;
 				continue;
 			} else {
 				/*
