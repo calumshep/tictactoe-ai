@@ -6,7 +6,6 @@ import ticTacToe.AggressiveAgent;
 import ticTacToe.DefensiveAgent;
 import ticTacToe.QLearningAgent;
 import ticTacToe.RandomAgent;
-import ticTacToe.ValueIterationAgent;
 
 public class TestQLearning {
 	@Test
