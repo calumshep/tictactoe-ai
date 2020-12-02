@@ -1,6 +1,9 @@
 package ticTacToe;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Random;
 
 /**
  * A Q-Learning agent with a Q-Table, i.e. a table of Q-Values. This table is implemented in the {@link QTable} class.
@@ -111,12 +114,53 @@ public class QLearningAgent extends Agent
 	
 	public void train()
 	{
-		/* 
-		 * TODO
-		 */
+		// Play the specified number of episodes
+		for (int i = 0; i < this.numEpisodes; i++) {
+			// Start at the initial game state
+			Game currentState = env.getCurrentGameState();
+			
+			// Continue playing until a terminal state is reached
+			while (!currentState.isTerminal()) {
+				// Get the actions associated with the state as a List type
+				List<Move> possibleActions = currentState.getPossibleMoves();
+
+				// Pick an action out of the state based on epsilon-greedy
+				Move action = null;
+				if (new Random().nextDouble() <= this.epsilon) {
+					// Explore (pick random action)
+					action = possibleActions.get(new Random().nextInt(possibleActions.size()));
+				} else {
+					// Exploit (pick action according to current policy (max q-value))
+					double maxQ = 0.0;
+					for (Move m : possibleActions) {
+						// If actions with the same q-value are encountered, the last encountered one is chosen
+						if (qTable.getQValue(currentState, m) >= maxQ) {
+							maxQ = qTable.getQValue(currentState, m);
+							action = m;
+						}
+					}
+				}
+				
+				if (action != null) {
+					// Move should never be illegal but have to catch the exception to keep Java happy anyway
+					try {
+						// Execute the chosen move and get the reward
+						double sample = env.executeMove(action).localReward + (this.discount * 0);
+						// Calculate the new q-value and update it
+						qTable.addQValue(
+							currentState,
+							action,
+							((1 - this.alpha) * (qTable.getQValue(currentState, action) + sample))
+						);
+					} catch (IllegalMoveException e) {
+						continue;
+					}
+				}
+			}
+		}
 
 		this.policy = this.extractPolicy();
-		
+
 		if (this.policy == null) {
 			System.out.println("Unimplemented methods! First implement the train() & extractPolicy methods");
 			//System.exit(1);
@@ -130,11 +174,26 @@ public class QLearningAgent extends Agent
 	 */
 	public Policy extractPolicy()
 	{
-		/* 
-		 * TODO
-		 */
+		Policy policy = new Policy();
+		
+		// Iterate over every stored state
+		for (Entry<Game, HashMap<Move, Double>> stateSet : qTable.entrySet()) {
+			// Work out best action based on highest q-value
+			Move bestAction = null;
+			double maxQVal = 0.0;
+			for (Entry<Move, Double> possibleAction : stateSet.getValue().entrySet()) {
+				if (possibleAction.getValue() >= maxQVal) {
+					maxQVal = possibleAction.getValue();
+					bestAction = possibleAction.getKey();
+				}
+			}
+			
+			if (bestAction != null) {
+				policy.policy.put(stateSet.getKey(), bestAction);
+			}
+		}
 
-		return null;
+		return policy;
 	}
 	
 	public static void main(String a[]) throws IllegalMoveException
