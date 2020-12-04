@@ -1,8 +1,7 @@
 package ticTacToe;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -76,7 +75,6 @@ public class QLearningAgent extends Agent
 	/**
 	 * Initialises all valid q-values -- Q(g,m) -- to 0.
 	 */
-	
 	protected void initQTable()
 	{
 		// All valid games where it is X's turn, or it's terminal
@@ -102,6 +100,28 @@ public class QLearningAgent extends Agent
 		this(new RandomAgent(), 0.1, 100, 0.9);
 	}
 	
+	/**
+	 * Returns the action chosen by the exploit property of the epsilon-greedy policy (max q-value)
+	 * 
+	 * @param g State to get action out of
+	 * @return Move Best action out of specified Game state
+	 */
+	public Move exploit(Game g)
+	{
+		Move action = null;
+		
+		double maxQ = -Double.MAX_VALUE;
+		
+		for (Move m : qTable.get(g).keySet()) {
+			// If actions with the same q-value are encountered, the last encountered one is chosen
+			if (qTable.getQValue(g, m) >= maxQ) {
+				maxQ = qTable.getQValue(g, m);
+				action = m;
+			}
+		}
+		
+		return action;
+	}
 	
 	/**
 	 * Implement this method. It should play {@code this.numEpisodes} episodes of Tic-Tac-Toe with the TTTEnvironment, updating
@@ -111,7 +131,6 @@ public class QLearningAgent extends Agent
 	 * At the end of this method you should always call the {@code extractPolicy()} method to extract the policy from the learned
 	 * q-values. This is currently done for you on the last line of the method.
 	 */
-	
 	public void train()
 	{
 		// Play the specified number of episodes
@@ -122,7 +141,7 @@ public class QLearningAgent extends Agent
 			// Continue playing until a terminal state is reached
 			while (!currentState.isTerminal()) {
 				// Get the actions associated with the state as a List type
-				List<Move> possibleActions = currentState.getPossibleMoves();
+				List<Move> possibleActions = new ArrayList<Move>(qTable.get(currentState).keySet());
 
 				// Pick an action out of the state based on epsilon-greedy
 				Move action = null;
@@ -131,32 +150,48 @@ public class QLearningAgent extends Agent
 					action = possibleActions.get(new Random().nextInt(possibleActions.size()));
 				} else {
 					// Exploit (pick action according to current policy (max q-value))
-					double maxQ = 0.0;
-					for (Move m : possibleActions) {
-						// If actions with the same q-value are encountered, the last encountered one is chosen
-						if (qTable.getQValue(currentState, m) >= maxQ) {
-							maxQ = qTable.getQValue(currentState, m);
-							action = m;
-						}
-					}
+					action = this.exploit(currentState);
 				}
 				
 				if (action != null) {
 					// Move should never be illegal but have to catch the exception to keep Java happy anyway
 					try {
-						// Execute the chosen move and get the reward
-						double sample = env.executeMove(action).localReward + (this.discount * 0);
-						// Calculate the new q-value and update it
-						qTable.addQValue(
-							currentState,
-							action,
-							((1 - this.alpha) * (qTable.getQValue(currentState, action) + sample))
-						);
+						// Execute the chosen move and get the new Game state
+						Outcome o = env.executeMove(action);
+						
+						if (!o.sPrime.isTerminal()) {
+							// Get the max q-value of actions out of the new state
+							double maxQSPrime = this.qTable.getQValue(o.sPrime, this.exploit(o.sPrime));
+							// Work out the 'sample' (scaled reward from action - factored into new q-value)
+							double newQ = o.localReward + (this.discount * maxQSPrime);
+	
+							// Calculate the new q-value and update it
+							double currentQ;
+							try {
+								currentQ = qTable.getQValue(currentState, action);
+							} catch (NullPointerException e) {
+								currentQ = 0;
+							}
+							
+							// Update the q-value of the action taken out of the state
+							System.out.println(((1 - this.alpha) * currentQ) + (this.alpha * newQ));
+							qTable.addQValue(
+								currentState,
+								action,
+								((1 - this.alpha) * currentQ) + (this.alpha * newQ)
+							);
+						}
 					} catch (IllegalMoveException e) {
-						continue;
+						//continue;
 					}
 				}
+				
+				// Repeat for the new state after executing the move
+				currentState = env.getCurrentGameState();
 			}
+			System.out.println("Finished episode " + i);
+
+			env = new TTTEnvironment(currentState.o);
 		}
 
 		this.policy = this.extractPolicy();
@@ -177,19 +212,12 @@ public class QLearningAgent extends Agent
 		Policy policy = new Policy();
 		
 		// Iterate over every stored state
-		for (Entry<Game, HashMap<Move, Double>> stateSet : qTable.entrySet()) {
+		for (Game state : qTable.keySet()) {
 			// Work out best action based on highest q-value
-			Move bestAction = null;
-			double maxQVal = 0.0;
-			for (Entry<Move, Double> possibleAction : stateSet.getValue().entrySet()) {
-				if (possibleAction.getValue() >= maxQVal) {
-					maxQVal = possibleAction.getValue();
-					bestAction = possibleAction.getKey();
-				}
-			}
+			Move bestAction = this.exploit(state);
 			
 			if (bestAction != null) {
-				policy.policy.put(stateSet.getKey(), bestAction);
+				policy.policy.put(state, bestAction);
 			}
 		}
 
