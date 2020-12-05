@@ -150,37 +150,37 @@ public class QLearningAgent extends Agent
 					// Exploit (pick action according to current policy (max q-value))
 					action = this.exploit(currentState);
 				}
-					// Move should never be illegal but have to catch the exception to keep Java happy anyway
-					try {
-						// Execute the chosen move and get the new Game state
-						Outcome o = env.executeMove(action);
-						
-						if (!o.sPrime.isTerminal()) {
-							// Get the max q-value of actions out of the new state
-							double maxQSPrime = this.qTable.getQValue(o.sPrime, this.exploit(o.sPrime));
-							// Work out the 'sample' (scaled reward from action - factored into new q-value)
-							double newQ = o.localReward + (this.discount * maxQSPrime);
-	
-							// Calculate the new q-value and update it
-							double currentQ;
-							try {
-								currentQ = qTable.getQValue(currentState, action);
-							} catch (NullPointerException e) {
-								currentQ = 0;
-							}
-							
-							// Update the q-value of the action taken out of the state
-							System.out.println(((1 - this.alpha) * currentQ) + (this.alpha * newQ));
-							qTable.addQValue(
-								currentState,
-								action,
-								((1 - this.alpha) * currentQ) + (this.alpha * newQ)
-							);
-						}
+
+				try {
+					// Execute the chosen action and get the new Game state
+					Outcome o = env.executeMove(action);
+
+					// Calculate the sample for the chosen action
+					double sample;
+					if (o.sPrime.isTerminal()) {
+						sample = o.localReward;
+					} else {
+						sample = o.localReward + (this.discount * this.qTable.getQValue(o.sPrime, this.exploit(o.sPrime)));
 					}
+
+					// Calculate the new q-value and update it
+					double currentQ  = qTable.getQValue(o.s, action);
+					double newQ = ((1 - this.alpha) * currentQ) + (this.alpha * sample);
+					
+					// Update the q-value of the action taken out of the state
+					qTable.addQValue(o.s, action, newQ);
+				} catch (IllegalMoveException e) {
+					// Move should never be illegal but have to catch the exception to keep Java happy anyway
+					continue;
 				}
 			}
+			
+			// Nice console output to track learning progress
+			if (i % 10000 == 0 && i > 0) {
+				System.out.println("Q-Learning agent completed " + i + " of " + this.numEpisodes + " episodes");
+			}
 
+			// Start a new game
 			env = new TTTEnvironment(currentState.o);
 		}
 
