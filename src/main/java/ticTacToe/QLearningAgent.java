@@ -28,7 +28,7 @@ public class QLearningAgent extends Agent
 	/**
 	 * The number of episodes to train for
 	 */
-	int numEpisodes = 100;
+	int numEpisodes = 60000;
 
 	/**
 	 * The discount factor (gamma)
@@ -97,7 +97,7 @@ public class QLearningAgent extends Agent
 	 */
 	public QLearningAgent()
 	{
-		this(new RandomAgent(), 0.1, 100, 0.9);
+		this(new RandomAgent(), 0.1, 60000, 0.9);
 	}
 	
 	/**
