@@ -133,12 +133,10 @@ public class QLearningAgent extends Agent
 	 */
 	public void train()
 	{
-		// Play the specified number of episodes
 		for (int i = 0; i < this.numEpisodes; i++) {
 			// Start at the initial game state
 			Game currentState = env.getCurrentGameState();
 			
-			// Continue playing until a terminal state is reached
 			while (!currentState.isTerminal()) {
 				// Get the actions associated with the state as a List type
 				List<Move> possibleActions = new ArrayList<Move>(qTable.get(currentState).keySet());
@@ -152,8 +150,6 @@ public class QLearningAgent extends Agent
 					// Exploit (pick action according to current policy (max q-value))
 					action = this.exploit(currentState);
 				}
-				
-				if (action != null) {
 					// Move should never be illegal but have to catch the exception to keep Java happy anyway
 					try {
 						// Execute the chosen move and get the new Game state
@@ -181,15 +177,9 @@ public class QLearningAgent extends Agent
 								((1 - this.alpha) * currentQ) + (this.alpha * newQ)
 							);
 						}
-					} catch (IllegalMoveException e) {
-						//continue;
 					}
 				}
-				
-				// Repeat for the new state after executing the move
-				currentState = env.getCurrentGameState();
 			}
-			System.out.println("Finished episode " + i);
 
 			env = new TTTEnvironment(currentState.o);
 		}
